@@ -1,19 +1,27 @@
 extends HBoxContainer
 
-signal submitted(env:String, exp:String)
+signal submitted(exp:String)
+signal update_hints(exp:String)
+signal next_hint()
+signal prev_hint()
+signal navigate_histories(histories:Array, cur:int)
 
-@onready var opt:OptionButton = $OptionButton
 @onready var input:LineEdit = $InputField
 @onready var btn:Button = $Button
+@onready var menubtn:MenuButton = $MenuButton
 
 func _ready():
 	input.text_submitted.connect(
 		func(s):
-			submitted.emit(opt.get_item_text(opt.selected), s)
+			submitted.emit(s)
+	)
+	input.text_changed.connect(
+		func(s):
+			update_hints.emit(s)
 	)
 	btn.pressed.connect(
 		func():
-			submitted.emit(opt.get_item_text(opt.selected), input.text)
+			submitted.emit(input.text)
 			input.on_text_submitted(input.text)
 	)
 	#get focus automatically.
@@ -23,18 +31,21 @@ func _ready():
 				input.grab_focus()
 	)
 
-var options = {}
-
-func add_option(s:String):
-	opt.add_item(s)
-	options[s] = opt.item_count - 1
-	assert(opt.get_item_text(opt.item_count - 1) == s)
-
-func remove_option(s:String):
-	if options.has(s):
-		opt.remove_item(options[s])
-		options.erase(s)
-
-func clear_options():
-	opt.clear()
-	options.clear()
+	menubtn.mouse_entered.connect(
+		func():
+			menubtn.modulate = Color.GREEN
+	)
+	menubtn.mouse_exited.connect(
+		func():
+			menubtn.modulate = Color.WHITE
+	)
+	menubtn.get_popup().id_pressed.connect(
+		func(id:int):
+			#watch
+			var exp = input.text.lstrip(" ").rstrip(" ")
+			if id == 0:
+				Console.execute("widgets.watch('%s')"%exp)
+			#add button
+			elif id == 1:
+				Console.execute("widgets.button('%s', '%s')"%[exp, exp])
+	)
